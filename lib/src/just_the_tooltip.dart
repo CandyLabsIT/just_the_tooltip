@@ -190,7 +190,7 @@ class _JustTheTooltipOverlayState extends JustTheTooltipState<OverlayEntry> {
   @override
   Widget build(BuildContext context) {
     assert(
-      Overlay.maybeOf(context) != null,
+      Overlay.of(context) != null,
       '${widget.runtimeType} require an Overlay widget ancestor for correct operation.',
     );
 
@@ -206,7 +206,7 @@ class _JustTheTooltipOverlayState extends JustTheTooltipState<OverlayEntry> {
     );
     final skrimOverlay = OverlayEntry(builder: (context) => _createSkrim());
 
-    final overlay = Overlay.maybeOf(context);
+    final overlay = Overlay.of(context);
 
     if (overlay == null) {
       throw StateError('Cannot find the overlay for the context $context');
@@ -765,7 +765,11 @@ abstract class JustTheTooltipState<T> extends State<JustTheInterface>
 
   /// This assumes the caller itself is the target
   TargetInformation _getTargetInformation(BuildContext context) {
-    final box = context.findRenderObject() as RenderBox?;
+    final OverlayState? overlayState = Overlay.of(
+      context,
+      debugRequiredFor: widget,
+    );
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
 
     if (box == null) {
       throw StateError(
@@ -774,10 +778,13 @@ abstract class JustTheTooltipState<T> extends State<JustTheInterface>
     }
 
     final targetSize = box.getDryLayout(const BoxConstraints.tightForFinite());
-    final target = box.localToGlobal(box.size.center(Offset.zero));
-    // TODO: Instead of this, change the alignment on
+    final Offset target = box.localToGlobal(
+      box.size.center(Offset.zero),
+      ancestor: overlayState!.context.findRenderObject(),
+    );
     // [CompositedTransformFollower]. That way we can allow a user configurable
     // alignment on where the tooltip ends up.
+
     final offsetToTarget = Offset(
       -target.dx + box.size.width / 2,
       -target.dy + box.size.height / 2,
